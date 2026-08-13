@@ -1,0 +1,7 @@
+[project]
+name = "cap776"
+version = "0.1.0"
+description = "My Data, My Story: Python program to read, validate, and analyze a personal daily activity log (CAP776 Minor Project 1, LPU MCA)."
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = []
