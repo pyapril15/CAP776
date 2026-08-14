@@ -12,3 +12,4 @@ wheels/
 # Editor
 .vscode/
 .idea
+~$*.xlsx
