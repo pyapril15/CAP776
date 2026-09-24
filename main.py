@@ -10,14 +10,13 @@ import os
 import openpyxl
 
 # look for the file in the current folder first, then in a "data" folder
-if os.path.exists("12621400.xlsx"):
-    FILENAME = "12621400.xlsx"
-elif os.path.exists(os.path.join("data", "12621400.xlsx")):
+if os.path.exists(os.path.join("data", "12621400.xlsx")):
     FILENAME = os.path.join("data", "12621400.xlsx")
 else:
-    FILENAME = "12621400.xlsx"   # will show error below if still missing
+    FILENAME = "12621400.xlsx"
 
 SHEET = "Activity Log"
+START_ROW = 6
 
 # column numbers as per the excel sheet
 COL_DATE = 1
@@ -39,22 +38,51 @@ SATISFACTION_MAP = {"Very Satisfied": 5, "Satisfied": 4, "Neutral": 3,
 ENERGY_MAP = {"High": 3, "Medium": 2, "Low": 1}
 
 
-def read_column(col, start_row=6):
-    """Read one column from the excel sheet and return a list of values."""
-    values = []
+def load_data():
+    """
+    Open the excel file ONCE and pull every needed column into a
+    dictionary of lists. Returns None if the file/sheet can't be read.
+    """
     try:
         wb = openpyxl.load_workbook(FILENAME, data_only=True)
-        ws = wb[SHEET]
-        for row in range(start_row, ws.max_row + 1):
-            cell_value = ws.cell(row=row, column=col).value
-            if cell_value is not None and cell_value != "":
-                values.append(cell_value)
     except FileNotFoundError:
         print("Error: file not found ->", FILENAME)
         print("Current folder:", os.getcwd())
+        return None
     except Exception as e:
-        print("Error while reading column", col, ":", e)
-    return values
+        print("Error opening workbook:", e)
+        return None
+
+    if SHEET not in wb.sheetnames:
+        print("Error: sheet not found ->", SHEET)
+        return None
+
+    ws = wb[SHEET]
+
+    data = {
+        "date": [], "sleep": [], "fitness": [], "study": [], "coding": [],
+        "class": [], "tracked": [], "free": [], "feeling": [],
+        "satisfaction": [], "energy": [],
+    }
+
+    for row in range(START_ROW, ws.max_row + 1):
+        date_val = ws.cell(row=row, column=COL_DATE).value
+        if date_val is None or date_val == "":
+            continue  # skip blank / unfilled rows entirely
+
+        data["date"].append(date_val)
+        data["sleep"].append(ws.cell(row=row, column=COL_SLEEP).value)
+        data["fitness"].append(ws.cell(row=row, column=COL_FITNESS).value)
+        data["study"].append(ws.cell(row=row, column=COL_STUDY).value)
+        data["coding"].append(ws.cell(row=row, column=COL_CODING).value)
+        data["class"].append(ws.cell(row=row, column=COL_CLASS).value)
+        data["tracked"].append(ws.cell(row=row, column=COL_TOTAL_TRACKED).value)
+        data["free"].append(ws.cell(row=row, column=COL_FREE).value)
+        data["feeling"].append(ws.cell(row=row, column=COL_FEELING).value)
+        data["satisfaction"].append(ws.cell(row=row, column=COL_SATISFACTION).value)
+        data["energy"].append(ws.cell(row=row, column=COL_ENERGY).value)
+
+    return data
 
 
 def average(values):
@@ -72,73 +100,50 @@ def average(values):
     return total / count
 
 
-def days_count():
-    dates = read_column(COL_DATE)
-    return len(dates)
+def sum_two_lists(list_a, list_b):
+    """Return element-wise sum of two equal-length lists (e.g. study+class)."""
+    n = min(len(list_a), len(list_b))
+    return [float(list_a[i]) + float(list_b[i]) for i in range(n)]
 
 
-# ---------------- Index calculations (Slide 19-26) ----------------
-
-def calc_tpi():
-    coding = read_column(COL_CODING)
-    return average(coding)
+def map_scores(values, score_map, default):
+    """Convert text values (Good/High/etc.) to numbers using a map."""
+    return [score_map.get(str(v).strip(), default) for v in values]
 
 
-def calc_aai():
-    study = read_column(COL_STUDY)
-    cls = read_column(COL_CLASS)
-    n = min(len(study), len(cls))
-    combined = []
-    for i in range(n):
-        combined.append(float(study[i]) + float(cls[i]))
-    return average(combined)
+# ---------------- Index calculations (Slide 19-27) ----------------
 
+def calc_indices(data):
+    n_days = len(data["date"])
 
-def calc_phai():
-    fitness = read_column(COL_FITNESS)
-    return average(fitness)
+    tpi = average(data["coding"])
+    aai = average(sum_two_lists(data["study"], data["class"]))
+    phai = average(data["fitness"])
+    sri = average(data["sleep"])
+    abi = average(data["free"])
+    tui = average(data["tracked"])
 
+    feeling_scores = map_scores(data["feeling"], FEELING_MAP, 3)
+    satisfaction_scores = map_scores(data["satisfaction"], SATISFACTION_MAP, 3)
+    energy_scores = map_scores(data["energy"], ENERGY_MAP, 2)
 
-def calc_sri():
-    sleep = read_column(COL_SLEEP)
-    return average(sleep)
+    n = min(len(feeling_scores), len(satisfaction_scores), len(energy_scores))
+    ei = 0.0
+    if n > 0:
+        total = sum(feeling_scores[i] + satisfaction_scores[i] + energy_scores[i]
+                     for i in range(n))
+        ei = total / (3 * n)
 
+    dci = (n_days / 40) * 100  # 40 expected days: 13 Aug - 21 Sept 2026
 
-def calc_abi():
-    free = read_column(COL_FREE)
-    return average(free)
+    pai = (0.15 * tpi + 0.20 * aai + 0.15 * phai + 0.20 * sri
+           + 0.15 * tui + 0.10 * ei + 0.05 * dci)  # Slide 27 formula
 
-
-def calc_tui():
-    tracked = read_column(COL_TOTAL_TRACKED)
-    return average(tracked)
-
-
-def calc_ei():
-    feelings = read_column(COL_FEELING)
-    satisfactions = read_column(COL_SATISFACTION)
-    energies = read_column(COL_ENERGY)
-    n = min(len(feelings), len(satisfactions), len(energies))
-    if n == 0:
-        return 0.0
-    total = 0
-    for i in range(n):
-        f = FEELING_MAP.get(str(feelings[i]).strip(), 3)
-        s = SATISFACTION_MAP.get(str(satisfactions[i]).strip(), 3)
-        e = ENERGY_MAP.get(str(energies[i]).strip(), 2)
-        total = total + (f + s + e)
-    return total / (3 * n)
-
-
-def calc_dci(expected_days=40):
-    valid_days = days_count()
-    return (valid_days / expected_days) * 100
-
-
-def calc_pai(tpi, aai, phai, sri, tui, ei, dci):
-    # Slide 27 formula (weights given by teacher)
-    return (0.15 * tpi + 0.20 * aai + 0.15 * phai + 0.20 * sri
-            + 0.15 * tui + 0.10 * ei + 0.05 * dci)
+    return {
+        "n_days": n_days, "tpi": tpi, "aai": aai, "phai": phai, "sri": sri,
+        "abi": abi, "tui": tui, "ei": ei, "dci": dci, "pai": pai,
+        "energy_scores": energy_scores, "satisfaction_scores": satisfaction_scores,
+    }
 
 
 # ---------------- Correlation (Slide 28) ----------------
@@ -179,13 +184,7 @@ def relation_note(r):
     else:
         strength = "Negligible"
 
-    if r > 0:
-        direction = "positive"
-    elif r < 0:
-        direction = "negative"
-    else:
-        direction = "no"
-
+    direction = "positive" if r > 0 else ("negative" if r < 0 else "no")
     return f"{strength} {direction} relation (r = {r:.2f})"
 
 
@@ -197,64 +196,45 @@ def main():
     print("Name: Praveen Yadav | Reg No: 12621400")
     print("=" * 60)
 
-    n_days = days_count()
-    if n_days == 0:
+    data = load_data()
+    if not data or len(data["date"]) == 0:
         print("No data found. Check the excel file.")
         return
 
+    n_days = len(data["date"])
     print("Valid days recorded:", n_days, "/ 40 expected")
     print("-" * 60)
 
-    tpi = calc_tpi()
-    aai = calc_aai()
-    phai = calc_phai()
-    sri = calc_sri()
-    abi = calc_abi()
-    tui = calc_tui()
-    ei = calc_ei()
-    dci = calc_dci()
-    pai = calc_pai(tpi, aai, phai, sri, tui, ei, dci)
+    idx = calc_indices(data)
 
-    print("Tech Productivity Index (TPI):", round(tpi, 2), "min/day")
-    print("Academic Activity Index (AAI):", round(aai, 2), "min/day")
-    print("Physical Activity Index (PhAI):", round(phai, 2), "min/day")
-    print("Sleep & Recovery Index (SRI):", round(sri, 2), "min/day")
-    print("Activity Balance Index (ABI):", round(abi, 2), "min/day")
-    print("Time Utilization Index (TUI):", round(tui, 2), "min/day")
-    print("Experience Index (EI):", round(ei, 2), "(scale 1-5)")
-    print("Data Continuity Index (DCI):", round(dci, 2), "%")
+    print("Tech Productivity Index (TPI):", round(idx["tpi"], 2), "min/day")
+    print("Academic Activity Index (AAI):", round(idx["aai"], 2), "min/day")
+    print("Physical Activity Index (PhAI):", round(idx["phai"], 2), "min/day")
+    print("Sleep & Recovery Index (SRI):", round(idx["sri"], 2), "min/day")
+    print("Activity Balance Index (ABI):", round(idx["abi"], 2), "min/day")
+    print("Time Utilization Index (TUI):", round(idx["tui"], 2), "min/day")
+    print("Experience Index (EI):", round(idx["ei"], 2), "(scale 1-5)")
+    print("Data Continuity Index (DCI):", round(idx["dci"], 2), "%")
     print("-" * 60)
-    print("Personal Activity Index (PAI):", round(pai, 2))
+    print("Personal Activity Index (PAI):", round(idx["pai"], 2))
     print("=" * 60)
 
-    # time budget check
-    print("\nTime check: TUI + ABI =", round(tui + abi, 2),
+    print("\nTime check: TUI + ABI =", round(idx["tui"] + idx["abi"], 2),
           "minutes (should be close to 1440)")
 
-    # relationship analysis
     print("\nRelationship Analysis:")
-    coding = read_column(COL_CODING)
-    sleep = read_column(COL_SLEEP)
-    study = read_column(COL_STUDY)
-    energy_raw = read_column(COL_ENERGY)
-    satisfaction_raw = read_column(COL_SATISFACTION)
+    r1 = pearson_r(data["coding"], idx["energy_scores"])
+    r2 = pearson_r(data["sleep"], idx["energy_scores"])
+    r3 = pearson_r(data["study"], idx["satisfaction_scores"])
 
-    energy_scores = [ENERGY_MAP.get(str(e).strip(), 2) for e in energy_raw]
-    satisfaction_scores = [SATISFACTION_MAP.get(str(s).strip(), 3) for s in satisfaction_raw]
-
-    r1 = pearson_r(coding, energy_scores)
-    r2 = pearson_r(sleep, energy_scores)
-    r3 = pearson_r(study, satisfaction_scores)
-
-    print("1. Coding vs Energy   ->", relation_note(r1))
-    print("2. Sleep vs Energy    ->", relation_note(r2))
+    print("1. Coding vs Energy      ->", relation_note(r1))
+    print("2. Sleep vs Energy       ->", relation_note(r2))
     print("3. Study vs Satisfaction ->", relation_note(r3))
 
-    # short findings
     print("\nFindings:")
-    print("- Average coding time was", round(tpi, 1), "min/day.")
-    print("- Average academic time (study+class) was", round(aai, 1), "min/day.")
-    print("- Average sleep was", round(sri, 1), "min/day.")
+    print("- Average coding time was", round(idx["tpi"], 1), "min/day.")
+    print("- Average academic time (study+class) was", round(idx["aai"], 1), "min/day.")
+    print("- Average sleep was", round(idx["sri"], 1), "min/day.")
     print("- Data was recorded for", n_days, "out of 40 expected days.")
     print("=" * 60)
 
