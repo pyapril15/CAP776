@@ -14,17 +14,20 @@ My implementation rules:
 - I use only openpyxl and standard Python logic (no numpy or pandas).
 - All index formulas follow the lecture slides directly.
 - I handle potential missing files or bad rows with try-except blocks.
+- Every time I run this program, it automatically creates (or overwrites)
+  output/12621400_output.txt with the exact console report.
 """
 
 import math
 import os
+import sys
 import warnings
 import openpyxl
 
-# I suppress openpyxl's data validation warning so my console output stays clean
+# suppressing openpyxl's data validation warning so my console output stays clean
 warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
 
-# I check both the project root and data/ directory for my workbook
+# checking both the project root and data/ directory for my workbook
 default_filename = "12621400.xlsx"
 data_dir_filename = os.path.join("data", default_filename)
 
@@ -41,7 +44,11 @@ sheet_name = "Activity Log"
 # Total expected days between 13 Aug 2026 and 21 Sept 2026 inclusive
 expected_days_count = 40
 
-# Column indices in my 'Activity Log' sheet (1-based index for openpyxl)
+# always saving my report here; the folder is created automatically if missing
+output_dir = "output"
+output_filename = "12621400_output.txt"
+
+# Column indices in my 'Activity Log' sheet
 col_date = 1
 col_sleep = 2
 col_fitness = 3
@@ -74,12 +81,29 @@ satisfaction_score_map = {
     "Very Dissatisfied": 1,
 }
 
-# In my 'Lists' sheet, energy is scored on a 1-3 scale
+# 'Lists' sheet, energy is scored on a 1-3 scale
 energy_score_map = {
     "High": 3,
     "Medium": 2,
     "Low": 1,
 }
+
+
+class Tee:
+    """
+    I mirror everything printed to the console into my output file at the
+    same time, so I don't have to change any of my existing print() calls.
+    """
+    def __init__(self, *streams):
+        self.streams = streams
+
+    def write(self, data):
+        for stream in self.streams:
+            stream.write(data)
+
+    def flush(self):
+        for stream in self.streams:
+            stream.flush()
 
 
 def read_column(filename, sheet_name, column, start_row=6):
@@ -337,7 +361,11 @@ def find_correlation_note(list_a, list_b, label_a, label_b):
     return correlation_value, summary_note
 
 
-def main():
+def run_report():
+    """
+    I run my full analysis and print every section of my report to whatever
+    stdout is currently set to (console, file, or both via Tee).
+    """
     print("=" * 78)
     print("   CAP776 Minor Project #1: My Data, My Story")
     print("   Personal Activity Intelligence Report")
@@ -481,6 +509,29 @@ def main():
     print("- I will aim to balance my sleep duration closer to 8 hours to avoid grogginess")
     print("  and maintain peak afternoon focus.")
     print("=" * 78 + "\n")
+
+
+def main():
+    """
+    I create the output/ folder automatically if it doesn't exist, and I
+    open the output file in "w" mode so it is always freshly overwritten
+    every single time I run this program (never appended, never duplicated).
+    While the report runs, I mirror every print() to both the console and
+    that file at once using my Tee class.
+    """
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, output_filename)
+
+    original_stdout = sys.stdout
+    try:
+        with open(output_path, "w", encoding="utf-8") as report_file:
+            sys.stdout = Tee(original_stdout, report_file)
+            run_report()
+    finally:
+        # I always restore normal console output, even if something went wrong
+        sys.stdout = original_stdout
+
+    print(f"\nReport saved to: {os.path.abspath(output_path)}")
 
 
 if __name__ == "__main__":

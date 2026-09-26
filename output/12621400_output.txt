@@ -1,0 +1,84 @@
+==============================================================================
+   CAP776 Minor Project #1: My Data, My Story
+   Personal Activity Intelligence Report
+==============================================================================
+Student Name     : Praveen Yadav
+Registration No. : 12621400
+Course / Section : MCA - D1P2633
+Data File        : data\12621400.xlsx
+Worksheet        : Activity Log
+------------------------------------------------------------------------------
+Recording Period : 2026-08-13 to 2026-09-21
+Logged Days      : 40 / 40 expected days
+------------------------------------------------------------------------------
+
+1. Activity Data Summary (Daily Averages)
+------------------------------------------------------------------------------
+Expected number of days           : 40
+Valid days recorded               : 40
+Missing days                      : 0
+Invalid / excluded records        : 0
+Average Sleep / day               : 547.50 min/day (~9.12 hrs)
+Average Fitness / day             : 31.00 min/day (~0.52 hrs)
+Average Study / day               : 130.50 min/day (~2.17 hrs)
+Average Coding / day              : 244.25 min/day (~4.07 hrs)
+Average Class / day               : 197.50 min/day (~3.29 hrs)
+Average Other Activities / day    : 247.50 min/day (~4.12 hrs)
+Average Free / Unaccounted Time   : 41.75 min/day (~0.70 hrs)
+------------------------------------------------------------------------------
+
+2. Activity Index Values
+------------------------------------------------------------------------------
+Index Name                       Acronym  Value              Unit / Scale
+------------------------------------------------------------------------------
+Tech Productivity                TPI          244.25        min/day
+Academic Activity                AAI          328.00        min/day
+Physical Activity                PhAI          31.00        min/day
+Sleep & Recovery                 SRI          547.50        min/day
+Activity Balance                 ABI           41.75        min/day
+Time Utilization                 TUI         1398.25        min/day
+Experience Index                 EI             3.42        / 5
+Data Continuity Index            DCI          100.00        %
+------------------------------------------------------------------------------
+Personal Activity Index          PAI          431.47        composite score
+==============================================================================
+
+[Time Budget Balance Verification]
+Total Tracked (TUI) + Free Time (ABI) = 1398.25 + 41.75 = 1440.00 minutes
+24 Hours = 1440.00 minutes -> Variance = 0.00 minutes (100% time accounted for)
+
+==============================================================================
+   RELATIONSHIP ANALYSIS (Pearson Correlation Coefficient - r)
+==============================================================================
+
+1. Sleep <-> Energy:
+   r = -0.2632 (weak negative relationship between Sleep Duration and Energy Level)
+   My Observation: When I slept around 8 to 8.5 hours, I woke up with my highest energy.
+   Sleeping longer (past 9.5 hours) often occurred when I was recovering from heavy fatigue.
+
+2. Study <-> Satisfaction:
+   r = +0.0584 (negligible positive relationship between Study Time and Satisfaction Level)
+   My Observation: My daily satisfaction stayed consistent across the 40 days
+   and was not solely dependent on isolated study time, but rather overall balance.
+
+3. Coding <-> Energy:
+   r = +0.2077 (weak positive relationship between Coding Time and Energy Level)
+   My Observation: On days I had higher energy, I naturally spent more time coding,
+   and completing my practical tasks kept me actively engaged.
+
+==============================================================================
+   FINDINGS ABOUT MY ROUTINE & AREAS FOR IMPROVEMENT
+==============================================================================
+Findings About Myself:
+- Academic and technical focus remained my highest waking priority (5.47 hrs/day
+  academic activity and 4.07 hrs/day coding practice).
+- My sleep routine was prioritized (9.12 hrs/day), ensuring consistent recovery.
+- I logged all 40 planned days with zero gaps, achieving a 100% Data Continuity Index.
+
+Areas to Improve:
+- Physical fitness averaged only 31 minutes per day. I plan to schedule dedicated
+  morning workout sessions to improve my physical activity index (PhAI).
+- I will aim to balance my sleep duration closer to 8 hours to avoid grogginess
+  and maintain peak afternoon focus.
+==============================================================================
+
